@@ -15,26 +15,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.beam.sdk.io.common;
 
-import common_job_properties
+import java.util.Map;
 
-// This is the Python Jenkins job which runs a maven install, and the current set of precommit
-// tests.
-mavenJob('beam_Python_UnitTest') {
-  description('Runs Python unit tests on a specific commit. Designed to be run by a pipeline job.')
+/**
+ * Methods common to all types of IOITs.
+ */
+public class IOITHelper {
 
-  // Set standard properties for a job which is part of a pipeline.
-  common_job_properties.setPipelineJobProperties(delegate, 35, "Python Unit Tests")
-  // Set standard properties for a pipeline job which needs to pull from GitHub instead of an
-  // upstream job.
-  common_job_properties.setPipelineBuildJobProperties(delegate)
+  private IOITHelper() {
+  }
 
-  // Construct Maven goals for this job.
-  args = [
-    '-B',
-    '-e',
-    'clean install',
-    '-pl sdks/python',
-  ]
-  goals(args.join(' '))
+  public static String getHashForRecordCount(int recordCount, Map<Integer, String> hashes) {
+    String hash = hashes.get(recordCount);
+    if (hash == null) {
+      throw new UnsupportedOperationException(
+        String.format("No hash for that record count: %s", recordCount)
+      );
+    }
+    return hash;
+  }
 }

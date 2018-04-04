@@ -34,6 +34,7 @@ from apache_beam.transforms import combiners
 from apache_beam.transforms import core
 from apache_beam.transforms.timeutil import TimeDomain
 from apache_beam.transforms.window import GlobalWindow
+from apache_beam.transforms.window import GlobalWindows
 from apache_beam.transforms.window import TimestampCombiner
 from apache_beam.transforms.window import WindowedValue
 from apache_beam.transforms.window import WindowFn
@@ -902,7 +903,12 @@ def create_trigger_driver(windowing,
   # TODO(robertwb): We can do more if we know elements are in timestamp
   # sorted order.
   if windowing.is_default() and is_batch:
-    driver = DefaultGlobalBatchTriggerDriver()
+    driver = DiscardingGlobalTriggerDriver()
+  elif (windowing.windowfn == GlobalWindows()
+        and windowing.triggerfn == AfterCount(1)
+        and windowing.accumulation_mode == AccumulationMode.DISCARDING):
+    # Here we also just pass through all the values every time.
+    driver = DiscardingGlobalTriggerDriver()
   else:
     driver = GeneralTriggerDriver(windowing, clock)
 
@@ -971,13 +977,10 @@ class _UnwindowedValues(observable.ObservableMixin):
     return not self == other
 
 
-class DefaultGlobalBatchTriggerDriver(TriggerDriver):
-  """Breaks a bundles into window (pane)s according to the default triggering.
+class DiscardingGlobalTriggerDriver(TriggerDriver):
+  """Groups all received values together.
   """
   GLOBAL_WINDOW_TUPLE = (GlobalWindow(),)
-
-  def __init__(self):
-    pass
 
   def process_elements(self, state, windowed_values, unused_output_watermark):
     yield WindowedValue(
@@ -1083,6 +1086,7 @@ class GeneralTriggerDriver(TriggerDriver):
             for unused_value, timestamp in elements)
            if element_output_time >= output_watermark))
       if output_time is not None:
+        state.clear_state(window, self.WATERMARK_HOLD)
         state.add_state(window, self.WATERMARK_HOLD, output_time)
 
       context = state.at(window, self.clock)

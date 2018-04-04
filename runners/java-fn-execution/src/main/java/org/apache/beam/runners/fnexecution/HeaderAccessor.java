@@ -16,25 +16,10 @@
  * limitations under the License.
  */
 
-import common_job_properties
+package org.apache.beam.runners.fnexecution;
 
-// This is the Java Jenkins job which runs the current set of standard unit tests.
-mavenJob('beam_Java_UnitTest') {
-  description('Runs Java Surefire unit tests. Designed to be run by a pipeline job.')
-
-  // Set standard properties for a job which is part of a pipeline.
-  common_job_properties.setPipelineJobProperties(delegate, 30, "Java Unit Tests")
-  // Set standard properties for a job which pulls artifacts from an upstream job.
-  common_job_properties.setPipelineDownstreamJobProperties(delegate, 'beam_Java_Build')
-
-  // Construct Maven goals for this job.
-  args = [
-    '-B',
-    '-e',
-    'surefire:test@default-test',
-    "-pl '!sdks/python'",
-    '-DrepoToken=$COVERALLS_REPO_TOKEN',
-    '-DpullRequest=$ghprbPullId',
-  ]
-  goals(args.join(' '))
+/** Interface to access headers in the client request. */
+public interface HeaderAccessor {
+  /** This method should be called from the request method. */
+  String getSdkWorkerId();
 }
