@@ -22,7 +22,7 @@ python setup.py nosetests \
         \"num_records\": 1000,
         \"key_size\": 5,
         \"value_size\":15,
-        \"bundle_size_distribution_type\": \'const'\,
+        \"bundle_size_distribution_type\": \"const\",
         \"bundle_size_distribution_param\": 1,
         \"force_initial_num_bundles\":0}'" \
     --tests apache_beam.testing.load_tests.co_group_by_it_test
@@ -73,22 +73,23 @@ class CoGroupByKeyTest(unittest.TestCase):
         )
     }
 
-    def setUp(self):
-      self.pipeline = TestPipeline(is_integration_test=True)
-      self.inputOptions = json.loads(self.pipeline.get_option('input_options'))
+  def setUp(self):
+    self.pipeline = TestPipeline(is_integration_test=True)
+    self.inputOptions = json.loads(self.pipeline.get_option('input_options'))
 
-    def test_co_group_by_key_it(self):
-      pc_list = []
-      with self.pipeline as p:
-        pc_list.append(p
-                       | beam.io.Read(synthetic_pipeline.SyntheticSource(
-                           self.parseTestPipelineOptions()
-                       )))
+  def testCoGroupByKey(self):
+    pc_list = []
+    with self.pipeline as p:
+      pc_list.append(p
+                     | beam.io.Read(synthetic_pipeline.SyntheticSource(
+                         self.parseTestPipelineOptions()
+                     )))
 
-        for pc_no, pc in enumerate(pc_list):
-          output = ({pc_no: pc} | beam.CoGroupByKey())
+      for pc_no, pc in enumerate(pc_list):
+        output = ({pc_no: pc} | beam.CoGroupByKey())
 
-        p.run().wait_until_finish()
+      p.run().wait_until_finish()
+      return output
 
 
 if __name__ == '__main__':
