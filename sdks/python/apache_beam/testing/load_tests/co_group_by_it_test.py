@@ -48,42 +48,49 @@ python setup.py nosetests \
 
 """
 
-import apache_beam as beam
-import unittest
-import logging
 import json
-
+import logging
+import unittest
+import apache_beam as beam
 from apache_beam.testing import synthetic_pipeline
 from apache_beam.testing.test_pipeline import TestPipeline
 
 
 class CoGroupByKeyTest(unittest.TestCase):
-    def parseTestPipelineOptions(self):
-        return {
-            'numRecords': self.inputOptions.get('num_records'),
-            'keySizeBytes': self.inputOptions.get('key_size'),
-            'valueSizeBytes': self.inputOptions.get('value_size'),
-            'bundleSizeDistribution': {'type': self.inputOptions.get('bundle_size_distribution_type', 'const'),
-                                       'param': self.inputOptions.get('bundle_size_distribution_param', 0)},
-            'forceNumInitialBundles': self.inputOptions.get('force_initial_num_bundles', 0)
-        }
+  def parseTestPipelineOptions(self):
+    return {
+        'numRecords': self.inputOptions.get('num_records'),
+        'keySizeBytes': self.inputOptions.get('key_size'),
+        'valueSizeBytes': self.inputOptions.get('value_size'),
+        'bundleSizeDistribution': {
+            'type': self.inputOptions.get(
+                'bundle_size_distribution_type', 'const'
+            ),
+            'param': self.inputOptions.get('bundle_size_distribution_param', 0)
+        },
+        'forceNumInitialBundles': self.inputOptions.get(
+            'force_initial_num_bundles', 0
+        )
+    }
 
     def setUp(self):
-        self.pipeline = TestPipeline(is_integration_test=True)
-        self.inputOptions = json.loads(self.pipeline.get_option('input_options'))
+      self.pipeline = TestPipeline(is_integration_test=True)
+      self.inputOptions = json.loads(self.pipeline.get_option('input_options'))
 
     def test_co_group_by_key_it(self):
-        pc_list = []
-        with self.pipeline as p:
-            pc_list.append(p
-                           | beam.io.Read(synthetic_pipeline.SyntheticSource(self.parseTestPipelineOptions())))
+      pc_list = []
+      with self.pipeline as p:
+        pc_list.append(p
+                       | beam.io.Read(synthetic_pipeline.SyntheticSource(
+                           self.parseTestPipelineOptions()
+                       )))
 
-            for pc_no, pc in enumerate(pc_list):
-                output = ({pc_no: pc} | beam.CoGroupByKey())
+        for pc_no, pc in enumerate(pc_list):
+          output = ({pc_no: pc} | beam.CoGroupByKey())
 
-            p.run().wait_until_finish()
+        p.run().wait_until_finish()
 
 
 if __name__ == '__main__':
-    logging.getLogger().setLevel(logging.INFO)
-    unittest.main()
+  logging.getLogger().setLevel(logging.INFO)
+  unittest.main()
