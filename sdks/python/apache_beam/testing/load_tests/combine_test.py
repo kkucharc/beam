@@ -88,6 +88,7 @@ class CombineTest(unittest.TestCase):
                )
 
       p.run().wait_until_finish()
+      return output
 
 
 if __name__ == '__main__':

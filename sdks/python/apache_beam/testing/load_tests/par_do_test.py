@@ -111,7 +111,7 @@ class ParDoTest(unittest.TestCase):
                )
 
       p.run().wait_until_finish()
-      return out1
+      return output
 
   if __name__ == '__main__':
     logging.getLogger().setLevel(logging.DEBUG)
