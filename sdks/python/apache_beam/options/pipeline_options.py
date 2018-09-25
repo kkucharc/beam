@@ -20,6 +20,7 @@
 from __future__ import absolute_import
 
 import argparse
+from builtins import list
 from builtins import object
 
 from apache_beam.options.value_provider import RuntimeValueProvider
@@ -182,6 +183,9 @@ class PipelineOptions(HasDisplayData):
       if isinstance(v, bool):
         if v:
           flags.append('--%s' % k)
+      elif isinstance(v, list):
+        for i in v:
+          flags.append('--%s=%s' % (k, i))
       else:
         flags.append('--%s=%s' % (k, v))
 
@@ -213,7 +217,7 @@ class PipelineOptions(HasDisplayData):
     result = vars(known_args)
 
     # Apply the overrides if any
-    for k in result.keys():
+    for k in list(result):
       if k in self._all_options:
         result[k] = self._all_options[k]
       if (drop_default and
@@ -510,6 +514,12 @@ class WorkerOptions(PipelineOptions):
         default=None,
         action='store_false',
         help='Whether to assign only private IP addresses to the worker VMs.')
+    parser.add_argument(
+        '--min_cpu_platform',
+        dest='min_cpu_platform',
+        type=str,
+        help='GCE minimum CPU platform. Default is determined by GCP.'
+    )
 
   def validate(self, validator):
     errors = []
@@ -650,6 +660,24 @@ class PortableOptions(PipelineOptions):
                         help=
                         ('Docker image to use for executing Python code '
                          'in the pipeline when running using the Fn API.'))
+
+
+class FlinkOptions(PipelineOptions):
+
+  @classmethod
+  def _add_argparse_args(cls, parser):
+    parser.add_argument('--flink_master',
+                        type=str,
+                        help=
+                        ('Address of the Flink master where the pipeline '
+                         'should be executed. Can either be of the form '
+                         '\'host:port\' or one of the special values '
+                         '[local], [collection], or [auto].'))
+    parser.add_argument('--parallelism',
+                        type=int,
+                        help=
+                        ('The degree of parallelism to be used when '
+                         'distributing operations onto workers.'))
 
 
 class TestOptions(PipelineOptions):
