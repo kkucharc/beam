@@ -837,8 +837,8 @@ class FnApiRunner(runner.PipelineRunner):
 
       # Everything that was originally a stage or a replacement, but wasn't
       # replaced, should be in the final graph.
-      final_stages = frozenset(stages).union(replacements.values()).difference(
-          list(replacements.keys()))
+      final_stages = frozenset(stages).union(list(replacements.values()))\
+          .difference(list(replacements))
 
       for stage in final_stages:
         # Update all references to their final values before throwing
@@ -1061,7 +1061,7 @@ class FnApiRunner(runner.PipelineRunner):
 
     def blocking_get(self, state_key):
       with self._lock:
-        return ''.join(self._state[self._to_key(state_key)])
+        return b''.join(self._state[self._to_key(state_key)])
 
     def blocking_append(self, state_key, data):
       with self._lock:
