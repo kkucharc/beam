@@ -61,27 +61,34 @@ python setup.py nosetests \
 import unittest
 import json
 import logging
+
+import time
+
 import apache_beam as beam
+from apache_beam.metrics import Metrics
 from apache_beam.testing import synthetic_pipeline
 from apache_beam.testing.test_pipeline import TestPipeline
 
 
 class ParDoTest(unittest.TestCase):
+
+
   def parseTestPipelineOptions(self):
-    return {
-        'numRecords': self.inputOptions.get('num_records'),
-        'keySizeBytes': self.inputOptions.get('key_size'),
-        'valueSizeBytes': self.inputOptions.get('value_size'),
-        'bundleSizeDistribution': {
-            'type': self.inputOptions.get(
-                'bundle_size_distribution_type', 'const'
-            ),
-            'param': self.inputOptions.get('bundle_size_distribution_param', 0)
-        },
-        'forceNumInitialBundles': self.inputOptions.get(
-            'force_initial_num_bundles', 0
-        )
-    }
+    return {'numRecords': self.inputOptions.get('num_records'),
+            'keySizeBytes': self.inputOptions.get('key_size'),
+            'valueSizeBytes': self.inputOptions.get('value_size'),
+            'bundleSizeDistribution': {
+              'type': self.inputOptions.get(
+                  'bundle_size_distribution_type', 'const'
+              ),
+              'param': self.inputOptions.get(
+                  'bundle_size_distribution_param', 0
+              )
+            },
+            'forceNumInitialBundles': self.inputOptions.get(
+                'force_initial_num_bundles', 0
+            )
+            }
 
   def getPerElementDelaySec(self):
     return self.syntheticStepOptions.get('per_element_delay_sec', 0)
@@ -92,27 +99,62 @@ class ParDoTest(unittest.TestCase):
   def getOutputRecordsPerInputRecords(self):
     return self.syntheticStepOptions.get('output_records_per_input_records', 0)
 
+  def getOutput(self):
+    return self.syntheticStepOptions.get('output', None)
+
   def setUp(self):
+    self.counter = Metrics.counter('Counter_ns', 'name')
+    self.timings = {}
     self.pipeline = TestPipeline(is_integration_test=True)
     self.inputOptions = json.loads(self.pipeline.get_option('input_options'))
     self.syntheticStepOptions = json.loads(
         self.pipeline.get_option('synthetic_step_options')
     )
 
+  class startTimer(beam.DoFn):
+    def process(self, element, timings, *args, **kwargs):
+      timings.append(time.time())
+      yield element
+      yield timings
+
+  class stopTimer(beam.DoFn):
+    def process(self, element, start, *args, **kwargs):
+      self.timings.append(time.time() - start)
+      yield element
+
+  class getElement(beam.DoFn):
+    def process(self, element, start):
+      print "Start : %s" % time.ctime()
+      self.counter.inc(1)
+      print "End : %s" % time.ctime()
+      self.timings.append(time.time() - start)
+      yield element
+
   def testParDo(self):
+    num_runs = 2
+
+
     with self.pipeline as p:
-      output = (p
-                | beam.io.Read(synthetic_pipeline.SyntheticSource(
-                    self.parseTestPipelineOptions()))
-                | beam.ParDo(synthetic_pipeline.SyntheticStep(
-                    self.getPerElementDelaySec(),
-                    self.getPerBundleDelaySec(),
-                    self.getOutputRecordsPerInputRecords()))
-               )
+      pc = (p
+            | 'Read synthetic: ' >> beam.io.Read(synthetic_pipeline.SyntheticSource(
+              self.parseTestPipelineOptions()))
+            )
+      start = time.time()
+
+      for i in range(num_runs):
+        label = 'Step: ' + str(i)
+        pc2 = (pc
+               | label >> beam.ParDo(self.getElement(start)))
+
+        print("%6d element%s %g sec" % (
+          i, " " if i == 1 else "s", self.timings[i]))
+
+        # run_time = stop - start
 
       p.run().wait_until_finish()
-      return output
+      # print("Time: %.2f sec" % run_time)
 
-  if __name__ == '__main__':
-    logging.getLogger().setLevel(logging.DEBUG)
-    unittest.main()
+if __name__ == '__main__':
+
+  logging.getLogger().setLevel(logging.DEBUG)
+  unittest.main()
