@@ -71,12 +71,18 @@ from apache_beam.testing.test_pipeline import TestPipeline
 class SideInputTest(unittest.TestCase):
   def parseTestPipelineOptions(self):
     return {
-      'numRecords': self.inputOptions.get('num_records'),
-      'keySizeBytes': self.inputOptions.get('key_size'),
-      'valueSizeBytes': self.inputOptions.get('value_size'),
-      'bundleSizeDistribution': {'type': self.inputOptions.get('bundle_size_distribution_type', 'const'),
-                                 'param': self.inputOptions.get('bundle_size_distribution_param', 0)},
-      'forceNumInitialBundles': self.inputOptions.get('force_initial_num_bundles', 0),
+        'numRecords': self.inputOptions.get('num_records'),
+        'keySizeBytes': self.inputOptions.get('key_size'),
+        'valueSizeBytes': self.inputOptions.get('value_size'),
+        'bundleSizeDistribution': {
+            'type': self.inputOptions.get(
+                'bundle_size_distribution_type', 'const'
+            ),
+            'param': self.inputOptions.get('bundle_size_distribution_param', 0)
+        },
+        'forceNumInitialBundles': self.inputOptions.get(
+            'force_initial_num_bundles', 0
+        )
     }
 
   def getPerElementDelaySec(self):
@@ -91,7 +97,8 @@ class SideInputTest(unittest.TestCase):
   def setUp(self):
     self.pipeline = TestPipeline()
     self.inputOptions = json.loads(self.pipeline.get_option('input_options'))
-    self.syntheticStepOptions = json.loads(self.pipeline.get_option('synthetic_step_options'))
+    self.syntheticStepOptions = json.loads(
+        self.pipeline.get_option('synthetic_step_options'))
 
   class Lenght(beam.DoFn):
     def process(self, element, id):
@@ -103,16 +110,18 @@ class SideInputTest(unittest.TestCase):
   def testParDo(self):
     with self.pipeline as p:
       pc1 = (p
-             | "Read pcoll 1" >> beam.io.Read(synthetic_pipeline.SyntheticSource(self.parseTestPipelineOptions())))
+             | "Read pcoll 1" >> beam.io.Read(
+                 synthetic_pipeline.SyntheticSource(
+                     self.parseTestPipelineOptions())))
 
       pc2 = (p
-             | "Read pcoll 2" >> beam.io.Read(synthetic_pipeline.SyntheticSource(self.parseTestPipelineOptions()))
-             | beam.ParDo(self.Lenght())
-             )
+             | "Read pcoll 2" >> beam.io.Read(
+                 synthetic_pipeline.SyntheticSource(
+                     self.parseTestPipelineOptions()))
+             | beam.ParDo(self.Lenght()))
 
       out = (pc1
-             | "Merge" >> beam.core.Map(self.join_fn, beam.pvalue.AsList(pc2))
-             )
+             | "Merge" >> beam.core.Map(self.join_fn, beam.pvalue.AsList(pc2)))
 
       p.run().wait_until_finish()
       return out
