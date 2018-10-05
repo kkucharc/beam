@@ -82,8 +82,8 @@ class CoGroupByKeyTest(unittest.TestCase):
     with self.pipeline as p:
       pc_list.append(p
                      | beam.io.Read(synthetic_pipeline.SyntheticSource(
-                         self.parseTestPipelineOptions()
-                     )))
+                         self.parseTestPipelineOptions()))
+                    )
 
       for pc_no, pc in enumerate(pc_list):
         output = ({pc_no: pc} | beam.CoGroupByKey())

@@ -41,6 +41,7 @@ python setup.py nosetests \
         --staging_location=gs://...
         --temp_location=gs://...
         --sdk_location=./dist/apache-beam-x.x.x.dev0.tar.gz
+        --output=gc
         --input_options='{
         \"num_records\": 1000,
         \"key_size\": 5,
@@ -57,7 +58,6 @@ python setup.py nosetests \
     --tests apache_beam.testing.load_tests.par_do_test
 
 """
-
 import unittest
 import json
 import logging
@@ -71,24 +71,22 @@ from apache_beam.testing.test_pipeline import TestPipeline
 
 
 class ParDoTest(unittest.TestCase):
-
-
   def parseTestPipelineOptions(self):
     return {'numRecords': self.inputOptions.get('num_records'),
             'keySizeBytes': self.inputOptions.get('key_size'),
             'valueSizeBytes': self.inputOptions.get('value_size'),
             'bundleSizeDistribution': {
-              'type': self.inputOptions.get(
-                  'bundle_size_distribution_type', 'const'
-              ),
-              'param': self.inputOptions.get(
-                  'bundle_size_distribution_param', 0
-              )
+                'type': self.inputOptions.get(
+                    'bundle_size_distribution_type', 'const'
+                ),
+                'param': self.inputOptions.get(
+                    'bundle_size_distribution_param', 0
+                )
             },
             'forceNumInitialBundles': self.inputOptions.get(
                 'force_initial_num_bundles', 0
             )
-            }
+           }
 
   def getPerElementDelaySec(self):
     return self.syntheticStepOptions.get('per_element_delay_sec', 0)
@@ -99,62 +97,48 @@ class ParDoTest(unittest.TestCase):
   def getOutputRecordsPerInputRecords(self):
     return self.syntheticStepOptions.get('output_records_per_input_records', 0)
 
-  def getOutput(self):
-    return self.syntheticStepOptions.get('output', None)
-
   def setUp(self):
-    self.counter = Metrics.counter('Counter_ns', 'name')
-    self.timings = {}
     self.pipeline = TestPipeline(is_integration_test=True)
+    self.output = self.pipeline.get_option('output')
     self.inputOptions = json.loads(self.pipeline.get_option('input_options'))
     self.syntheticStepOptions = json.loads(
         self.pipeline.get_option('synthetic_step_options')
     )
 
-  class startTimer(beam.DoFn):
-    def process(self, element, timings, *args, **kwargs):
-      timings.append(time.time())
-      yield element
-      yield timings
-
-  class stopTimer(beam.DoFn):
-    def process(self, element, start, *args, **kwargs):
-      self.timings.append(time.time() - start)
-      yield element
-
   class getElement(beam.DoFn):
-    def process(self, element, start):
-      print "Start : %s" % time.ctime()
+    def __init__(self):
+      self.counter = Metrics.counter('Counter_ns', 'name')
+
+    def process(self, element):
       self.counter.inc(1)
-      print "End : %s" % time.ctime()
-      self.timings.append(time.time() - start)
       yield element
 
   def testParDo(self):
-    num_runs = 2
-
+    num_runs = 3
 
     with self.pipeline as p:
       pc = (p
-            | 'Read synthetic: ' >> beam.io.Read(synthetic_pipeline.SyntheticSource(
-              self.parseTestPipelineOptions()))
-            )
+            | 'Read synthetic: ' >> beam.io.Read(
+                synthetic_pipeline.SyntheticSource(
+                    self.parseTestPipelineOptions()
+                ))
+           )
       start = time.time()
 
       for i in range(num_runs):
-        label = 'Step: ' + str(i)
-        pc2 = (pc
-               | label >> beam.ParDo(self.getElement(start)))
+        label = 'Step: %d' % i
+        pc = (pc
+              | label >> beam.ParDo(self.getElement()))
 
-        print("%6d element%s %g sec" % (
-          i, " " if i == 1 else "s", self.timings[i]))
+      if self.output is not None:
+        pc = (pc
+              | "Write" >> beam.io.WriteToText(self.output))
 
-        # run_time = stop - start
+      p.run()
+      run_time = time.time() - start
+      print "Time: %.2f sec" % run_time
 
-      p.run().wait_until_finish()
-      # print("Time: %.2f sec" % run_time)
 
 if __name__ == '__main__':
-
   logging.getLogger().setLevel(logging.DEBUG)
   unittest.main()

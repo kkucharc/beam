@@ -80,19 +80,15 @@ class GroupByKeyTest(unittest.TestCase):
 
   def testGroupByKey(self):
     with self.pipeline as p:
-      output = (p
-                | beam.io.Read(
-                    synthetic_pipeline.SyntheticSource(
-                        self.parseTestPipelineOptions()
-                    ))
-                | beam.GroupByKey()
-                | 'Ungroup' >> beam.FlatMap(
-                    lambda elm: [(elm[0], v) for v in elm[1]]
-                    )
-               )
+      p = (p
+           | beam.io.Read(synthetic_pipeline.SyntheticSource(
+               self.parseTestPipelineOptions()))
+           | 'Group By Key' >> beam.GroupByKey()
+           | 'Ungroup' >> beam.FlatMap(
+               lambda elm: [(elm[0], v) for v in elm[1]])
+          )
 
       p.run().wait_until_finish()
-      return output
 
 if __name__ == '__main__':
   logging.getLogger().setLevel(logging.DEBUG)
