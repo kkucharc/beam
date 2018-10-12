@@ -79,12 +79,17 @@ class CombineTest(unittest.TestCase):
     self.pipeline = TestPipeline(is_integration_test=True)
     self.inputOptions = json.loads(self.pipeline.get_option('input_options'))
 
+  class _get_element(beam.DoFn):
+    def process(self, element):
+      yield element
+
   def testCombineGlobally(self):
     with self.pipeline as p:
       output = (p
                 | beam.io.Read(synthetic_pipeline.SyntheticSource(
                     self.parseTestPipelineOptions()))
-                | beam.CombineGlobally(beam.combiners.ToListCombineFn())
+                | beam.CombineGlobally(beam.combiners.TopCombineFn(1000))
+                | 'label' >> beam.ParDo(self._get_element())
                )
 
       p.run().wait_until_finish()

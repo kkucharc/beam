@@ -24,6 +24,13 @@ python setup.py nosetests \
         \"value_size\":15,
         \"bundle_size_distribution_type\": \"const\",
         \"bundle_size_distribution_param\": 1,
+        \"force_initial_num_bundles\":0}'
+        --co_input_options='{
+        \"num_records\": 1000,
+        \"key_size\": 5,
+        \"value_size\":15,
+        \"bundle_size_distribution_type\": \"const\",
+        \"bundle_size_distribution_param\": 1,
         \"force_initial_num_bundles\":0}'" \
     --tests apache_beam.testing.load_tests.co_group_by_it_test
 
@@ -43,6 +50,14 @@ python setup.py nosetests \
         \"bundle_size_distribution_type\": \"const\",
         \"bundle_size_distribution_param\": 1,
         \"force_initial_num_bundles\":0
+        }'
+        --co_input_options='{
+        \"num_records\": 1000,
+        \"key_size\": 5,
+        \"value_size\":15,
+        \"bundle_size_distribution_type\": \"const\",
+        \"bundle_size_distribution_param\": 1,
+        \"force_initial_num_bundles\":0
         }'" \
     --tests apache_beam.testing.load_tests.co_group_by_it_test
 
@@ -55,20 +70,24 @@ import apache_beam as beam
 from apache_beam.testing import synthetic_pipeline
 from apache_beam.testing.test_pipeline import TestPipeline
 
+INPUT_TAG = 'pc1'
+CO_INPUT_TAG = 'pc2'
 
 class CoGroupByKeyTest(unittest.TestCase):
-  def parseTestPipelineOptions(self):
+
+
+  def parseTestPipelineOptions(self, options):
     return {
-        'numRecords': self.inputOptions.get('num_records'),
-        'keySizeBytes': self.inputOptions.get('key_size'),
-        'valueSizeBytes': self.inputOptions.get('value_size'),
+        'numRecords': options.get('num_records'),
+        'keySizeBytes': options.get('key_size'),
+        'valueSizeBytes': options.get('value_size'),
         'bundleSizeDistribution': {
-            'type': self.inputOptions.get(
+            'type': options.get(
                 'bundle_size_distribution_type', 'const'
             ),
-            'param': self.inputOptions.get('bundle_size_distribution_param', 0)
+            'param': options.get('bundle_size_distribution_param', 0)
         },
-        'forceNumInitialBundles': self.inputOptions.get(
+        'forceNumInitialBundles': options.get(
             'force_initial_num_bundles', 0
         )
     }
@@ -76,20 +95,38 @@ class CoGroupByKeyTest(unittest.TestCase):
   def setUp(self):
     self.pipeline = TestPipeline(is_integration_test=True)
     self.inputOptions = json.loads(self.pipeline.get_option('input_options'))
+    self.coInputOptions = json.loads(self.pipeline.get_option('co_input_options'))
+
+  class Ungroup(beam.DoFn):
+    def process(self, element):
+      values = element[1]
+      inputs = values.get(INPUT_TAG)
+      co_inputs = values.get(CO_INPUT_TAG)
+      for i in inputs:
+        yield i
+      for i in co_inputs:
+        yield i
 
   def testCoGroupByKey(self):
-    pc_list = []
     with self.pipeline as p:
-      pc_list.append(p
-                     | beam.io.Read(synthetic_pipeline.SyntheticSource(
-                         self.parseTestPipelineOptions()))
-                    )
+      pc1 = (p
+             | 'Read ' + INPUT_TAG >> beam.io.Read(synthetic_pipeline.SyntheticSource(
+          self.parseTestPipelineOptions(self.inputOptions)))
+             | 'Make ' + INPUT_TAG + ' iterable' >> beam.Map(lambda x: (x, x))
+             )
 
-      for pc_no, pc in enumerate(pc_list):
-        output = ({pc_no: pc} | beam.CoGroupByKey())
+      pc2 = (p
+             | 'Read ' + CO_INPUT_TAG >> beam.io.Read(synthetic_pipeline.SyntheticSource(
+          self.parseTestPipelineOptions(self.coInputOptions)))
+             | 'Make ' + CO_INPUT_TAG + ' iterable' >> beam.Map(lambda x: (x, x))
+             )
+
+      results = ({INPUT_TAG: pc1, CO_INPUT_TAG: pc2}
+                | 'CoGroupByKey: ' >> beam.CoGroupByKey()
+                | 'Consume Joined Collections' >> beam.ParDo(self.Ungroup())
+                )
 
       p.run().wait_until_finish()
-      return output
 
 
 if __name__ == '__main__':

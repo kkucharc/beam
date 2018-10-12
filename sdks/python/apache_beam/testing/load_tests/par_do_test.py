@@ -18,18 +18,16 @@
 To run test on DirectRunner
 
 python setup.py nosetests \
-    --test-pipeline-options="--input_options='{
+    --test-pipeline-options="
+    --iterations=1000
+    --input_options='{
     \"num_records\": 300,
     \"key_size\": 5,
     \"value_size\":15,
     \"bundle_size_distribution_type\": \"const\",
     \"bundle_size_distribution_param\": 1,
     \"force_initial_num_bundles\": 0
-    }'
-    --synthetic_step_options='{
-    \"per_element_delay_sec\": 1,
-    \"per_bundle_delay_sec\": 0,
-    \"output_records_per_input_records\":1}'" \
+    }'" \
     --tests apache_beam.testing.load_tests.par_do_test
 
 To run test on other runner (ex. Dataflow):
@@ -42,6 +40,7 @@ python setup.py nosetests \
         --temp_location=gs://...
         --sdk_location=./dist/apache-beam-x.x.x.dev0.tar.gz
         --output=gc
+        --iterations=1000
         --input_options='{
         \"num_records\": 1000,
         \"key_size\": 5,
@@ -49,12 +48,7 @@ python setup.py nosetests \
         \"bundle_size_distribution_type\": \"const\",
         \"bundle_size_distribution_param\": 1,
         \"force_initial_num_bundles\": 0
-        }'
-        --synthetic_step_options='{
-        \"per_element_delay_sec\": 1,
-        \"per_bundle_delay_sec\": 0,
-        \"output_records_per_input_records\":1}'
-        " \
+        }'" \
     --tests apache_beam.testing.load_tests.par_do_test
 
 """
@@ -88,57 +82,62 @@ class ParDoTest(unittest.TestCase):
             )
            }
 
-  def getPerElementDelaySec(self):
-    return self.syntheticStepOptions.get('per_element_delay_sec', 0)
-
-  def getPerBundleDelaySec(self):
-    return self.syntheticStepOptions.get('per_bundle_delay_sec', 0)
-
-  def getOutputRecordsPerInputRecords(self):
-    return self.syntheticStepOptions.get('output_records_per_input_records', 0)
-
   def setUp(self):
     self.pipeline = TestPipeline(is_integration_test=True)
     self.output = self.pipeline.get_option('output')
+    self.iterations = self.pipeline.get_option('iterations')
     self.inputOptions = json.loads(self.pipeline.get_option('input_options'))
-    self.syntheticStepOptions = json.loads(
-        self.pipeline.get_option('synthetic_step_options')
-    )
 
-  class getElement(beam.DoFn):
+
+  class _MeasureTime(beam.DoFn):
+    def __init__(self):
+      self.distribution = Metrics.distribution('time_distribution', 'time')
+
+    def process(self, element):
+      self.distribution.update(time.time())
+      yield element
+
+  class _GetElement(beam.DoFn):
     def __init__(self):
       self.counter = Metrics.counter('Counter_ns', 'name')
 
     def process(self, element):
-      self.counter.inc(1)
+      key, value = element
+      for i in range(len(value)):
+        self.counter.inc(i)
       yield element
 
   def testParDo(self):
-    num_runs = 3
+    num_runs = int(self.iterations)
 
     with self.pipeline as p:
       pc = (p
-            | 'Read synthetic: ' >> beam.io.Read(
+            | 'Read synthetic' >> beam.io.Read(
                 synthetic_pipeline.SyntheticSource(
                     self.parseTestPipelineOptions()
                 ))
+            | 'Measure start time' >> beam.ParDo(self._MeasureTime())
            )
-      start = time.time()
 
       for i in range(num_runs):
         label = 'Step: %d' % i
         pc = (pc
-              | label >> beam.ParDo(self.getElement()))
+              | label >> beam.ParDo(self._GetElement()))
 
       if self.output is not None:
         pc = (pc
-              | "Write" >> beam.io.WriteToText(self.output))
+              | "Write" >> beam.io.WriteToText(self.output)
+             )
 
-      p.run()
-      run_time = time.time() - start
-      print "Time: %.2f sec" % run_time
+      result = p.run()
+      result.wait_until_finish()
+      metrics = result.metrics().query()
+      for counter in metrics['counters']:
+        print("Counter: %s", counter)
 
+      for dist in metrics['distributions']:
+        print("Distribution: %s", dist)
 
 if __name__ == '__main__':
-  logging.getLogger().setLevel(logging.DEBUG)
+  logging.getLogger().setLevel(logging.INFO)
   unittest.main()

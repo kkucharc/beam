@@ -80,7 +80,7 @@ class GroupByKeyTest(unittest.TestCase):
 
   def testGroupByKey(self):
     with self.pipeline as p:
-      p = (p
+      pc = (p
            | beam.io.Read(synthetic_pipeline.SyntheticSource(
                self.parseTestPipelineOptions()))
            | 'Group By Key' >> beam.GroupByKey()
