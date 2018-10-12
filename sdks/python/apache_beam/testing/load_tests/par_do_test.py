@@ -28,6 +28,11 @@ python setup.py nosetests \
     \"bundle_size_distribution_param\": 1,
     \"force_initial_num_bundles\": 0
     }'" \
+    }'
+    --synthetic_step_options='{
+    \"per_element_delay_sec\": 1,
+    \"per_bundle_delay_sec\": 0,
+    \"output_records_per_input_records\":1}'" \
     --tests apache_beam.testing.load_tests.par_do_test
 
 To run test on other runner (ex. Dataflow):
@@ -89,7 +94,7 @@ class ParDoTest(unittest.TestCase):
     self.inputOptions = json.loads(self.pipeline.get_option('input_options'))
 
 
-  class _MeasureTime(beam.DoFn):
+  class _measure_time(beam.DoFn):
     def __init__(self):
       self.distribution = Metrics.distribution('time_distribution', 'time')
 
@@ -97,7 +102,7 @@ class ParDoTest(unittest.TestCase):
       self.distribution.update(time.time())
       yield element
 
-  class _GetElement(beam.DoFn):
+  class _get_element(beam.DoFn):
     def __init__(self):
       self.counter = Metrics.counter('Counter_ns', 'name')
 
@@ -116,13 +121,13 @@ class ParDoTest(unittest.TestCase):
                 synthetic_pipeline.SyntheticSource(
                     self.parseTestPipelineOptions()
                 ))
-            | 'Measure start time' >> beam.ParDo(self._MeasureTime())
+            | 'Measure start time' >> beam.ParDo(self._measure_time())
            )
 
       for i in range(num_runs):
         label = 'Step: %d' % i
         pc = (pc
-              | label >> beam.ParDo(self._GetElement()))
+              | label >> beam.ParDo(self._get_element()))
 
       if self.output is not None:
         pc = (pc

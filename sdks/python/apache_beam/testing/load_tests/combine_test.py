@@ -89,7 +89,7 @@ class CombineTest(unittest.TestCase):
                 | beam.io.Read(synthetic_pipeline.SyntheticSource(
                     self.parseTestPipelineOptions()))
                 | beam.CombineGlobally(beam.combiners.TopCombineFn(1000))
-                | 'label' >> beam.ParDo(self._get_element())
+                | beam.ParDo(self._get_element())
                )
 
       p.run().wait_until_finish()
