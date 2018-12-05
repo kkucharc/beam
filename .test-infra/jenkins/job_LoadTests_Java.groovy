@@ -23,7 +23,7 @@ import CommonJobProperties as commonJobProperties
 def testsConfigurations = [
         [
                 jobName           : 'beam_Java_LoadTests_GroupByKey_Direct_Small',
-                jobDescription    : 'Runs GroupByKey load tests on direct runner small records (10b)',
+                jobDescription    : 'Runs GroupByKey load tests on direct runner small records 10b',
                 itClass           : 'org.apache.beam.sdk.loadtests.GroupByKeyLoadTest',
                 prCommitStatusName: 'Java GroupByKey Small Java Load Test Direct',
                 prTriggerPhase    : 'Run GroupByKey Small Java Load Test Direct',
@@ -51,7 +51,7 @@ def testsConfigurations = [
                         bigQueryDataset  : 'load_tests',
                         bigQueryTable    : 'dataflow_gbk',
                         sourceOptions    : '{"numRecords":1000,"splitPointFrequencyRecords":1,"keySizeBytes":10,"valueSizeBytes":20,"numHotKeys":3,"hotKeyFraction":0.3,"seed":123456,"bundleSizeDistribution":{"type":"const","const":42},"forceNumInitialBundles":100,"progressShape":"LINEAR","initializeDelayDistribution":{"type":"const","const":42}}',
-                        stepOptions      : '{"outputRecordsPerInputRecord":2,"preservesInputKeyDistribution":2,"keySizeBytes":10,"valueSizeBytes":20,"numHotKeys":3,"hotKeyFraction":0.3,"seed":123456}}',
+                        stepOptions      : '{"outputRecordsPerInputRecord":2,"preservesInputKeyDistribution":2,"keySizeBytes":10,"valueSizeBytes":20,"numHotKeys":3,"hotKeyFraction":0.3,"seed":123456}',
                         fanout           : 10,
                         iterations       : 1,
                 ]
