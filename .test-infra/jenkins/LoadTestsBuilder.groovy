@@ -61,14 +61,14 @@ class LoadTestsBuilder {
                 tasks(':beam-sdks-java-load-tests:run')
                 commonJobProperties.setGradleSwitches(delegate)
                 switches("-Dorg.gradle.daemon=false")
+                switches("-PloadTest.mainClass=\"${mainClass}\"")
                 switches("-PloadTest.runner=${runner.dependency}")
                 switches("-PloadTest.args=\"${parseOptions(options)}\"")
-                switches("-PloadTest.mainClass=\"${mainClass}\"")
             }
         }
     }
 
     private static String parseOptions(Map<String, Object> options) {
-        options.collect { "--${it.key}=${it.value.toString()}" }.join(' ')
+        options.collect { "--${it.key}=${it.value.toString()}".replace('\"', '\\"') }.join(' ')
     }
 }
