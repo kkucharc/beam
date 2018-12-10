@@ -37,13 +37,9 @@ class LoadTestsBuilder {
     }
 
     static void buildTest(context, String title, Runner runner, Map<String, Object> jobSpecificOptions, String mainClass) {
-        Map<String, Object> options = getFullOptions(jobSpecificOptions, runner)
-
+        Map<String, Object> options = jobSpecificOptions.put('runner', runner.jobSpecificOptions)
+        
         suite(context, title, runner, options, mainClass)
-    }
-
-    private static Map<String, Object> getFullOptions(Map<String, Object> jobSpecificOptions, Runner runner) {
-        jobSpecificOptions.put('runner', runner.jobSpecificOptions)
     }
 
     static void suite(context, String title, Runner runner, Map<String, Object> options, String mainClass) {
