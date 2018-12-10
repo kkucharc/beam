@@ -21,10 +21,6 @@ import CommonJobProperties as commonJobProperties
 // Class for building Load Tests jobs and suites
 class LoadTestsBuilder {
 
-    private static Map<String, Object> defaultOptions = [
-            project: 'apache-beam-testing',
-    ]
-
     enum Runner {
         DATAFLOW("DataflowRunner", ":beam-runners-google-cloud-dataflow-java"),
         SPARK("SparkRunner", ":beam-runners-spark"),
@@ -47,10 +43,7 @@ class LoadTestsBuilder {
     }
 
     private static Map<String, Object> getFullOptions(Map<String, Object> jobSpecificOptions, Runner runner) {
-        Map<String, Object> options = defaultOptions + jobSpecificOptions
-
-        options.put('runner', runner.option)
-        options
+        jobSpecificOptions.put('runner', runner.jobSpecificOptions)
     }
 
     static void suite(context, String title, Runner runner, Map<String, Object> options, String mainClass) {
@@ -62,7 +55,7 @@ class LoadTestsBuilder {
                 commonJobProperties.setGradleSwitches(delegate)
                 switches("-Dorg.gradle.daemon=false")
                 switches("-PloadTest.mainClass=\"${mainClass}\"")
-                switches("-PloadTest.runner=${runner.dependency}")
+                switches("-Prunner=${runner.dependency}")
                 switches("-PloadTest.args=\"${parseOptions(options)}\"")
             }
         }
