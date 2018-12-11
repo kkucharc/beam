@@ -21,8 +21,6 @@ import CommonJobProperties as commonJobProperties
 // Class for building Load Tests jobs and suites
 class LoadTestsBuilder {
 
-    private static Map<String, Object> defaultOptions = [
-    ]
 
     enum Runner {
         DATAFLOW("DataflowRunner", ":beam-runners-google-cloud-dataflow-java"),
@@ -40,7 +38,7 @@ class LoadTestsBuilder {
     }
 
     static void buildTest(context, String title, Runner runner, Map<String, Object> jobSpecificOptions, String mainClass) {
-        Map<String, Object> options = jobSpecificOptions + defaultOptions
+        Map<String, Object> options = jobSpecificOptions 
         options.put('runner', runner.option)
 
         suite(context, title, runner, options, mainClass)
