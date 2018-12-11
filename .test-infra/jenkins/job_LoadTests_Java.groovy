@@ -20,6 +20,7 @@ import LoadTestsBuilder as loadTestsBuilder
 import CommonJobProperties as commonJobProperties
 
 
+
 def testsConfigurations = [
         [
                 jobName           : 'beam_Java_LoadTests_GroupByKey_Direct_Small',
@@ -54,11 +55,12 @@ def testsConfigurations = [
                         stepOptions      : '{"outputRecordsPerInputRecord":1,"preservesInputKeyDistribution":true,"perBundleDelay":10000,"perBundleDelayType":"MIXED","cpuUtilizationInMixedDelay":0.5}',
                         fanout           : 10,
                         iterations       : 1,
+                        numWorkers       : 4,
+                        maxNumWorkers    : 30,
                 ]
 
         ],
 ]
-
 for (testConfiguration in testsConfigurations) {
     create_load_test_job(testConfiguration)
 }
