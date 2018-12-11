@@ -22,8 +22,6 @@ import CommonJobProperties as commonJobProperties
 class LoadTestsBuilder {
 
     private static Map<String, Object> defaultOptions = [
-            project             :'apache-beam-testing',
-            tempLocation        : 'gs://temp-storage-for-perf-tests/loadtests',
     ]
 
     enum Runner {
