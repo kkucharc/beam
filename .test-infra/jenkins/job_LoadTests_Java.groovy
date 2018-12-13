@@ -56,7 +56,6 @@ def testsConfigurations = [
                         fanout              : 10,
                         iterations          : 1,
                         maxNumWorkers       : 10,
-                        autoscalingAlgorithm: 'NONE',
                 ]
 
         ],
