@@ -55,8 +55,7 @@ def testsConfigurations = [
                         stepOptions         : '{"outputRecordsPerInputRecord":1,"preservesInputKeyDistribution":true,"perBundleDelay":10000,"perBundleDelayType":"MIXED","cpuUtilizationInMixedDelay":0.5}',
                         fanout              : 10,
                         iterations          : 1,
-                        numWorkers          : 4,
-                        maxNumWorkers       : 30,
+                        maxNumWorkers       : 10,
                         autoscalingAlgorithm: 'NONE',
                 ]
 
