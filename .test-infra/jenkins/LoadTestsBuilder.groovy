@@ -47,6 +47,7 @@ class LoadTestsBuilder {
     static void suite(context, String title, Runner runner, Map<String, Object> options, String mainClass) {
         context.steps {
             shell("echo *** ${title} ***")
+            shell("LOAD_TEST_ENABLED=true")
             gradle {
                 rootBuildScriptDir(commonJobProperties.checkoutDir)
                 tasks(':beam-sdks-java-load-tests:run')

@@ -66,7 +66,14 @@ from apache_beam.testing import synthetic_pipeline
 from apache_beam.testing.load_tests.load_test_metrics_utils import MeasureTime
 from apache_beam.testing.test_pipeline import TestPipeline
 
+import os
+if os.environ['LOAD_TEST_ENABLED'] == True:
+  load_test_enabled = True
+else:
+  load_test_enabled = False
 
+
+unittest.skipIf(not load_test_enabled, 'Load tests are disabled.')
 class SideInputTest(unittest.TestCase):
   def _parseTestPipelineOptions(self):
     return {
