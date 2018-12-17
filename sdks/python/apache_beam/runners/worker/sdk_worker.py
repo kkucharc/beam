@@ -48,11 +48,13 @@ class SdkHarness(object):
   REQUEST_METHOD_PREFIX = '_request_'
   SCHEDULING_DELAY_THRESHOLD_SEC = 5*60  # 5 Minutes
 
-  def __init__(self, control_address, worker_count, credentials=None,
-               profiler_factory=None):
+  def __init__(
+      self, control_address, worker_count, credentials=None, worker_id=None,
+      profiler_factory=None):
     self._alive = True
     self._worker_count = worker_count
     self._worker_index = 0
+    self._worker_id = worker_id
     if credentials is None:
       logging.info('Creating insecure control channel.')
       self._control_channel = grpc.insecure_channel(control_address)
@@ -63,7 +65,7 @@ class SdkHarness(object):
     logging.info('Control channel established.')
 
     self._control_channel = grpc.intercept_channel(
-        self._control_channel, WorkerIdInterceptor())
+        self._control_channel, WorkerIdInterceptor(self._worker_id))
     self._data_channel_factory = data_plane.GrpcClientDataChannelFactory(
         credentials)
     self._state_handler_factory = GrpcStateHandlerFactory()
@@ -448,14 +450,13 @@ class GrpcStateHandler(object):
     self._done = True
     self._requests.put(self._DONE)
 
-  def blocking_get(self, state_key):
+  def blocking_get(self, state_key, continuation_token=None):
     response = self._blocking_request(
         beam_fn_api_pb2.StateRequest(
             state_key=state_key,
-            get=beam_fn_api_pb2.StateGetRequest()))
-    if response.get.continuation_token:
-      raise NotImplementedError
-    return response.get.data
+            get=beam_fn_api_pb2.StateGetRequest(
+                continuation_token=continuation_token)))
+    return response.get.data, response.get.continuation_token
 
   def blocking_append(self, state_key, data):
     self._blocking_request(
