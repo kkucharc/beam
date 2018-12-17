@@ -56,6 +56,7 @@ python setup.py nosetests \
 
 from __future__ import absolute_import
 
+import os
 import json
 import logging
 import unittest
@@ -66,14 +67,12 @@ from apache_beam.testing import synthetic_pipeline
 from apache_beam.testing.load_tests.load_test_metrics_utils import MeasureTime
 from apache_beam.testing.test_pipeline import TestPipeline
 
-import os
-if os.environ['LOAD_TEST_ENABLED'] == True:
+load_test_enabled = False
+if os.environ.get('LOAD_TEST_ENABLED') == 'true':
   load_test_enabled = True
-else:
-  load_test_enabled = False
 
 
-unittest.skipIf(not load_test_enabled, 'Load tests are disabled.')
+@unittest.skipIf(not load_test_enabled, 'Load tests are enabled only for phase triggering.')
 class SideInputTest(unittest.TestCase):
   def _parseTestPipelineOptions(self):
     return {
@@ -142,7 +141,7 @@ class SideInputTest(unittest.TestCase):
            join_fn,
            AsIter(side_input),
            self.iterations)
-       | 'Measure time' >> beam.ParDo(MeasureTime())
+       | 'Measure time' >> beam.ParDo(MeasureTime('side_input'))
       )
 
       result = p.run()
