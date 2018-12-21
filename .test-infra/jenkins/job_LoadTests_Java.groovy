@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-import CommonTestProperties.Runner.*
+import static CommonTestProperties.Runner.*
 import CommonJobProperties as commonJobProperties
 
 
@@ -27,7 +27,7 @@ def testsConfigurations = [
                 itClass           : 'org.apache.beam.sdk.loadtests.GroupByKeyLoadTest',
                 prCommitStatusName: 'Java GroupByKey Small Java Load Test Direct',
                 prTriggerPhase    : 'Run GroupByKey Small Java Load Test Direct',
-                runner            : CommonTestProperties.Runner.DIRECT,
+                runner            : DIRECT,
                 jobProperties     : [
                         publishToBigQuery: true,
                         bigQueryDataset  : 'load_test_PRs',
