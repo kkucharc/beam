@@ -55,7 +55,6 @@ class LoadTestsBuilder {
                 rootBuildScriptDir(commonJobProperties.checkoutDir)
                 tasks(':beam-sdks-java-load-tests:run')
                 commonJobProperties.setGradleSwitches(delegate)
-                switches("-Dorg.gradle.daemon=false")
                 switches("-PloadTest.mainClass=\"${mainClass}\"")
                 switches("-Prunner=${runner.dependency}")
                 switches("-PloadTest.args=\"${parseOptions(options)}\"")
