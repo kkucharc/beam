@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-import CommonTestProperties.Runner
+import CommonTestProperties.*
 import CommonJobProperties as commonJobProperties
 
 
