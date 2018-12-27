@@ -16,22 +16,24 @@
  * limitations under the License.
  */
 
-enum Runner {
-    DATAFLOW("DataflowRunner", ":beam-runners-google-cloud-dataflow-java"),
-    SPARK("SparkRunner", ":beam-runners-spark"),
-    FLINK("FlinkRunner", ":beam-runners-flink_2.11"),
-    DIRECT("DirectRunner", ":beam-runners-direct-java")
+class CommonTestProperties {
+    enum Runner {
+        DATAFLOW("DataflowRunner", ":beam-runners-google-cloud-dataflow-java"),
+        SPARK("SparkRunner", ":beam-runners-spark"),
+        FLINK("FlinkRunner", ":beam-runners-flink_2.11"),
+        DIRECT("DirectRunner", ":beam-runners-direct-java")
 
-    private final String option
-    private final String dependency
+        private final String option
+        private final String dependency
 
-    Runner(String option, String dependency) {
-        this.option = option
-        this.dependency = dependency
+        Runner(String option, String dependency) {
+            this.option = option
+            this.dependency = dependency
+        }
     }
-}
 
-enum TriggeringContext {
-    PR,
-    POST_COMMIT
+    enum TriggeringContext {
+        PR,
+        POST_COMMIT
+    }
 }
