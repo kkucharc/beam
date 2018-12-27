@@ -18,6 +18,7 @@
 
 import CommonJobProperties as commonJobProperties
 import LoadTestsBuilder as loadTestsBuilder
+import CommonTestProperties.Runner
 
 
 def testsConfigurations = [
@@ -27,7 +28,7 @@ def testsConfigurations = [
                 itClass           : 'org.apache.beam.sdk.loadtests.GroupByKeyLoadTest',
                 prCommitStatusName: 'Java GroupByKey Small Java Load Test Direct',
                 prTriggerPhase    : 'Run GroupByKey Small Java Load Test Direct',
-                runner            : CommonTestProperties.Runner.DIRECT,
+                runner            : Runner.DIRECT,
                 jobProperties     : [
                         publishToBigQuery: true,
                         bigQueryDataset  : 'load_test_PRs',
@@ -45,7 +46,7 @@ def testsConfigurations = [
                 itClass           : 'org.apache.beam.sdk.loadtests.GroupByKeyLoadTest',
                 prCommitStatusName: 'Java GroupByKey Small Load Test Dataflow',
                 prTriggerPhase    : 'Run GroupByKey Small Java Load Test Dataflow',
-                runner            : commonTestProperties.Runner.DATAFLOW,
+                runner            : Runner.DATAFLOW,
                 jobProperties     : [
                         publishToBigQuery   : true,
                         bigQueryDataset     : 'load_test_PRs',
