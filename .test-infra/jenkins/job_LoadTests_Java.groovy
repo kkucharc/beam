@@ -16,8 +16,9 @@
  * limitations under the License.
  */
 
-import CommonTestProperties as commonTestProperties
 import CommonJobProperties as commonJobProperties
+import CommonTestProperties as commonTestProperties
+import LoadTestsBuilder as loadTestsBuilder
 
 
 def testsConfigurations = [
