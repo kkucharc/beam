@@ -27,7 +27,7 @@ def testsConfigurations = [
                 itClass           : 'org.apache.beam.sdk.loadtests.GroupByKeyLoadTest',
                 prCommitStatusName: 'Java GroupByKey Small Java Load Test Direct',
                 prTriggerPhase    : 'Run GroupByKey Small Java Load Test Direct',
-                runner            : DIRECT,
+                runner            : Runner.DIRECT,
                 jobProperties     : [
                         publishToBigQuery: true,
                         bigQueryDataset  : 'load_test_PRs',
