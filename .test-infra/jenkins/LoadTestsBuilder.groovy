@@ -17,7 +17,7 @@
  */
 
 import CommonJobProperties as commonJobProperties
-import CommonTestProperties as commonTestProperties
+import CommonTestProperties.Runner
 
 // Class for building Load Tests jobs and suites
 class LoadTestsBuilder {
@@ -27,14 +27,14 @@ class LoadTestsBuilder {
             tempLocation        : 'gs://temp-storage-for-perf-tests/loadtests',
     ]
 
-    static void buildTest(context, String title, CommonTestProperties.Runner runner, Map<String, Object> jobSpecificOptions, String mainClass) {
+    static void buildTest(context, String title, Runner runner, Map<String, Object> jobSpecificOptions, String mainClass) {
         Map<String, Object> options = jobSpecificOptions + defaultOptions
         options.put('runner', runner.option)
 
         suite(context, title, runner, options, mainClass)
     }
 
-    static void suite(context, String title, CommonTestProperties.Runner runner, Map<String, Object> options, String mainClass) {
+    static void suite(context, String title, Runner runner, Map<String, Object> options, String mainClass) {
         context.steps {
             shell("echo *** ${title} ***")
             gradle {
