@@ -18,7 +18,7 @@
 
 import CommonJobProperties as commonJobProperties
 import LoadTestsBuilder as loadTestsBuilder
-
+import PhraseTriggeringPostCommitBuilder
 
 def testsConfigurations = [
         [
@@ -61,7 +61,7 @@ def testsConfigurations = [
 ]
 
 for (testConfiguration in testsConfigurations) {
-    PhraseTriggeringPostCommitBuilderpostCommitJob(
+    PhraseTriggeringPostCommitBuilder.postCommitJob(
             testConfiguration.jobName,
             testConfiguration.prTriggerPhase,
             testConfiguration.prCommitStatusName,
