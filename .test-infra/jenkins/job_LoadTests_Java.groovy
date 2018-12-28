@@ -47,39 +47,28 @@ def testsConfigurations = [
                 prTriggerPhase    : 'Run GroupByKey Small Java Load Test Dataflow',
                 runner            : CommonTestProperties.Runner.DATAFLOW,
                 jobProperties     : [
-                        publishToBigQuery   : true,
-                        bigQueryDataset     : 'load_test_PRs',
-                        bigQueryTable       : 'dataflow_gbk_small',
-                        sourceOptions       : '{"numRecords":10,"splitPointFrequencyRecords":1,"keySizeBytes":1,"valueSizeBytes":9,"numHotKeys":0,"hotKeyFraction":0,"seed":123456,"bundleSizeDistribution":{"type":"const","const":42},"forceNumInitialBundles":100,"progressShape":"LINEAR","initializeDelayDistribution":{"type":"const","const":42}}',
-                        stepOptions         : '{"outputRecordsPerInputRecord":1,"preservesInputKeyDistribution":true,"perBundleDelay":10000,"perBundleDelayType":"MIXED","cpuUtilizationInMixedDelay":0.5}',
-                        fanout              : 10,
-                        iterations          : 1,
-                        maxNumWorkers       : 10,
+                        publishToBigQuery: true,
+                        bigQueryDataset  : 'load_test_PRs',
+                        bigQueryTable    : 'dataflow_gbk_small',
+                        sourceOptions    : '{"numRecords":10,"splitPointFrequencyRecords":1,"keySizeBytes":1,"valueSizeBytes":9,"numHotKeys":0,"hotKeyFraction":0,"seed":123456,"bundleSizeDistribution":{"type":"const","const":42},"forceNumInitialBundles":100,"progressShape":"LINEAR","initializeDelayDistribution":{"type":"const","const":42}}',
+                        stepOptions      : '{"outputRecordsPerInputRecord":1,"preservesInputKeyDistribution":true,"perBundleDelay":10000,"perBundleDelayType":"MIXED","cpuUtilizationInMixedDelay":0.5}',
+                        fanout           : 10,
+                        iterations       : 1,
+                        maxNumWorkers    : 10,
                 ]
 
         ],
 ]
 
 for (testConfiguration in testsConfigurations) {
-    create_load_test_job(testConfiguration)
-}
-
-private void create_load_test_job(testConfiguration) {
-
-    // This job runs load test with Metrics API
-    job(testConfiguration.jobName) {
+    PhraseTriggeringPostCommitBuilderpostCommitJob(
+            testConfiguration.jobName,
+            testConfiguration.prTriggerPhase,
+            testConfiguration.prCommitStatusName,
+            this
+    ) {
         description(testConfiguration.jobDescription)
-
-        // Set default Beam job properties.
-        commonJobProperties.setTopLevelMainJobProperties(delegate)
-
-        // Allows triggering this build against pull requests.
-        commonJobProperties.enablePhraseTriggeringFromPullRequest(
-                delegate,
-                testConfiguration.prCommitStatusName,
-                testConfiguration.prTriggerPhase)
-
-
+        commonJobProperties.setTopLevelMainJobProperties(delegate, 'master', 240)
         loadTestsBuilder.buildTest(delegate, testConfiguration.jobDescription, testConfiguration.runner, testConfiguration.jobProperties, testConfiguration.itClass)
     }
 }
