@@ -17,6 +17,14 @@
 
 """
 Utility functions used for integrating Metrics API into load tests pipelines.
+
+Metrics are send to BigQuery in following format:
+test_id | submit_timestamp | metric_type | value
+
+The 'test_id' field indicates which suite is running (ex. small, dataflow, python).
+Currently it is possible to have following metrics types:
+* runtime
+
 """
 
 from __future__ import absolute_import
@@ -36,8 +44,30 @@ except ImportError:
   SchemaField = None
   NotFound = None
 
-RUNTIME_LABEL = 'runtime'
-SUBMIT_TIMESTAMP_LABEL = 'submit_timestamp'
+RUNTIME_METRIC = 'runtime'
+ID_LABEL = 'test_id'
+SUBMIT_TIMESTAMP_LABEL = 'timestamp'
+METRICS_TYPE_LABEL = 'metric'
+VALUE_LABEL = 'value'
+
+SCHEMA = [
+  {'name': ID_LABEL,
+   'type': 'STRING',
+   'mode': 'REQUIRED'
+   },
+  {'name': SUBMIT_TIMESTAMP_LABEL,
+   'type': 'TIMESTAMP',
+   'mode': 'REQUIRED'
+   },
+  {'name': METRICS_TYPE_LABEL,
+   'type': 'STRING',
+   'mode': 'REQUIRED'
+   },
+  {'name': METRICS_TYPE_LABEL,
+   'type': 'FLOAT',
+   'mode': 'REQUIRED'
+   }
+]
 
 
 def _get_schema_field(schema_field):
@@ -48,14 +78,13 @@ def _get_schema_field(schema_field):
 
 
 class BigQueryClient(object):
-  def __init__(self, project_name, table, dataset, schema_map):
+  def __init__(self, project_name, table, dataset):
     self._namespace = table
 
     self._bq_client = bigquery.Client(project=project_name)
 
-    schema = self._parse_schema(schema_map)
-    self._schema_names = self._get_schema_names(schema)
-    schema = self._prepare_schema(schema)
+    self._schema_names = self._get_schema_names()
+    schema = self._prepare_schema()
 
     self._get_or_create_table(schema, dataset)
 
@@ -68,17 +97,20 @@ class BigQueryClient(object):
       yield self._get_element_by_schema(name, insert_list)
 
   def _get_element_by_schema(self, schema_name, insert_list):
-    for metric in insert_list:
-      if metric['label'] == schema_name:
-        return metric['value']
+    for insertion in insert_list:
+      for value in insertion:
+        if value['label'] == schema_name:
+          return value['value']
     return None
 
   def _insert_data(self, rows_tuple):
-    errors = self._bq_client.insert_rows(self._bq_table, rows=[rows_tuple])
-    if len(errors) > 0:
-      for err in errors:
-        logging.error(err['message'])
-        raise ValueError('Unable save rows in BigQuery.')
+    outputs = self._bq_client.insert_rows(self._bq_table, rows=[rows_tuple])
+    if len(outputs) > 0:
+      for output in outputs:
+        errors = output['errors']
+        for err in errors:
+          logging.error(err['message'])
+          raise ValueError('Unable save rows in BigQuery: {}'.format(err['message']))
 
   def _get_dataset(self, dataset_name):
     bq_dataset_ref = self._bq_client.dataset(dataset_name)
@@ -88,7 +120,7 @@ class BigQueryClient(object):
       raise ValueError(
           'Dataset {} does not exist in your project. '
           'You have to create table first.'
-          .format(dataset_name))
+            .format(dataset_name))
     return bq_dataset
 
   def _get_or_create_table(self, bq_schemas, dataset):
@@ -104,25 +136,23 @@ class BigQueryClient(object):
       table = bigquery.Table(table_ref, schema=bq_schemas)
       self._bq_table = self._bq_client.create_table(table)
 
-  def _parse_schema(self, schema_map):
-    return [{'name': SUBMIT_TIMESTAMP_LABEL,
-             'type': 'TIMESTAMP',
-             'mode': 'REQUIRED'}] + schema_map
+  def _prepare_schema(self):
+    return [_get_schema_field(row) for row in SCHEMA]
 
-  def _prepare_schema(self, schemas):
-    return [_get_schema_field(schema) for schema in schemas]
-
-  def _get_schema_names(self, schemas):
-    return [schema['name'] for schema in schemas]
+  def _get_schema_names(self):
+    return [schema['name'] for schema in SCHEMA]
 
 
 class MetricsMonitor(object):
-  def __init__(self, project_name, table, dataset, schema_map):
+  def __init__(self, project_name, table, dataset):
     if project_name is not None:
-      self.bq = BigQueryClient(project_name, table, dataset, schema_map)
+      self.bq = BigQueryClient(project_name, table, dataset)
 
-  def send_metrics(self, result):
+  def send_metrics(self, result, namespace):
     metrics = result.metrics().query()
+    timestamp = {'label': SUBMIT_TIMESTAMP_LABEL, 'value': time.time()}
+    test_id = {'label': ID_LABEL, 'value': namespace}
+
     counters = metrics['counters']
     counters_list = []
     if len(counters) > 0:
@@ -133,9 +163,12 @@ class MetricsMonitor(object):
     if len(distributions) > 0:
       dist_list = self._prepare_runtime_metrics(distributions)
 
-    timestamp = {'label': SUBMIT_TIMESTAMP_LABEL, 'value': time.time()}
+    metrics_list = [test_id] + [timestamp]
+    insert_list = []
+    values = [dist_list] + [counters_list]
+    for value in values:
+      insert_list.append(metrics_list + value)
 
-    insert_list = [timestamp] + dist_list + counters_list
     self.bq.match_and_save(insert_list)
 
   def _prepare_counter_metrics(self, counters):
@@ -145,8 +178,9 @@ class MetricsMonitor(object):
     for counter in counters:
       counter_commited = counter.committed
       counter_label = str(counter.key.metric.name)
-      counters_list.append(
-          {'label': counter_label, 'value': counter_commited})
+      counters_list.extend([
+          {'label': VALUE_LABEL, 'value': counter_commited},
+          {'label': METRICS_TYPE_LABEL, 'value': counter_label}])
 
     return counters_list
 
@@ -165,13 +199,14 @@ class MetricsMonitor(object):
     runtime_in_s = max_value - min_value
     logging.info("Runtime: %s", runtime_in_s)
     runtime_in_s = float(runtime_in_s)
-    return [{'label': RUNTIME_LABEL, 'value': runtime_in_s}]
+    return [{'label': VALUE_LABEL, 'value': runtime_in_s},
+            {'label': METRICS_TYPE_LABEL, 'value': RUNTIME_METRIC}]
 
 
 class MeasureTime(beam.DoFn):
   def __init__(self, namespace):
     self.namespace = namespace
-    self.runtime = Metrics.distribution(self.namespace, RUNTIME_LABEL)
+    self.runtime = Metrics.distribution(self.namespace, RUNTIME_METRIC)
 
   def start_bundle(self):
     self.runtime.update(time.time())
@@ -193,5 +228,7 @@ def count_bytes(counter_name):
       for i in range(len(value)):
         counter.inc(i)
       return f(*args)
+
     return repl
+
   return layer

@@ -90,7 +90,6 @@ except ImportError:
   bq = None
 
 COUNTER_LABEL = "total_bytes_count"
-RUNTIME_LABEL = 'runtime'
 
 
 @unittest.skipIf(bq is None, 'BigQuery for storing metrics not installed')
@@ -124,15 +123,10 @@ class ParDoTest(unittest.TestCase):
     metrics_dataset = self.pipeline.get_option('metrics_dataset')
     self.metrics_monitor = None
     if metrics_project_id and self.metrics_namespace is not None:
-      measured_values = [
-          {'name': RUNTIME_LABEL, 'type': 'FLOAT', 'mode': 'REQUIRED'},
-          {'name': COUNTER_LABEL, 'type': 'INTEGER', 'mode': 'REQUIRED'}
-      ]
       self.metrics_monitor = MetricsMonitor(
           project_name=metrics_project_id,
           table=self.metrics_namespace,
           dataset=metrics_dataset,
-          schema_map=measured_values
       )
     else:
       logging.error('One or more of parameters for collecting metrics '
@@ -184,7 +178,7 @@ class ParDoTest(unittest.TestCase):
       result.wait_until_finish()
 
       if self.metrics_monitor is not None:
-        self.metrics_monitor.send_metrics(result)
+        self.metrics_monitor.send_metrics(result, self.metrics_namespace)
 
 
 if __name__ == '__main__':
