@@ -35,10 +35,7 @@ def smokeTestConfigurations = [
                         metrics_table       : 'python_direct_gbk',
                         input_options       : '\'{"num_records": 100000,' +
                                 '"key_size": 1,' +
-                                '"value_size":1,' +
-                                '"bundle_size_distribution_type": "const",' +
-                                '"bundle_size_distribution_param": 1,' +
-                                '"force_initial_num_bundles": 10}\'',
+                                '"value_size":1}\'',
 
                 ]
         ],
@@ -56,10 +53,7 @@ def smokeTestConfigurations = [
                         metrics_table       : 'python_dataflow_gbk',
                         input_options       : '\'{"num_records": 100000,' +
                                 '"key_size": 1,' +
-                                '"value_size":1,' +
-                                '"bundle_size_distribution_type": "const",' +
-                                '"bundle_size_distribution_param": 1,' +
-                                '"force_initial_num_bundles": 10}\'',
+                                '"value_size":1}\'',
                         maxNumWorkers       : 10,
                 ]
         ],
