@@ -207,13 +207,7 @@ def loadTestConfigurations = [
 ]
 
 def loadTestJob = { scope ->
-  scope.description('Runs Java GBK load tests on Dataflow runner in batch mode')
-  commonJobProperties.setTopLevelMainJobProperties(scope, 'master', 240)
-
-  for (testConfiguration in loadTestConfigurations) {
-    context = scope instanceof PhraseTriggeringPostCommitBuilder ? CommonTestProperties.TriggeringContext.PR : CommonTestProperties.TriggeringContext.POST_COMMIT
-    loadTestsBuilder.loadTest(scope, testConfiguration.title, testConfiguration.runner, CommonTestProperties.SDK.JAVA, testConfiguration.jobProperties, testConfiguration.itClass, context)
-  }
+  loadTestsBuilder.loadTest(scope, CommonTestProperties.SDK.JAVA, testConfigurations)
 }
 
 CronJobBuilder.cronJob('beam_LoadTests_Java_GBK_Dataflow_Batch', 'H 12 * * *', this) {

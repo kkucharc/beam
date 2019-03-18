@@ -65,16 +65,19 @@ def smokeTestConfigurations = [
         ],
 ]
 
+def loadTestJob = { scope ->
+    loadTestsBuilder.loadTest(scope, CommonTestProperties.SDK.PYTHON, testConfigurations)
+}
+
+CronJobBuilder.cronJob('beam_LoadTests_Java_GBK_Dataflow_Batch', 'H 12 * * *', this) {
+    loadTestJob(delegate)
+}
+
 PhraseTriggeringPostCommitBuilder.postCommitJob(
         'beam_Python_LoadTests_Smoke',
         'Run Python Load Tests Smoke',
         'Python Load Tests Smoke',
         this
 ) {
-    description("Runs Python load tests in \"smoke\" mode to check if everything works well")
-    commonJobProperties.setTopLevelMainJobProperties(delegate, 'master', 120)
-
-    for (testConfiguration in smokeTestConfigurations) {
-        loadTestsBuilder.loadTest(delegate, testConfiguration.title, testConfiguration.runner,testConfiguration.sdk, testConfiguration.jobProperties, testConfiguration.itClass, CommonTestProperties.TriggeringContext.PR)
-    }
+    loadTestJob(delegate)
 }

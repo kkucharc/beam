@@ -22,7 +22,18 @@ import CommonTestProperties.SDK
 import CommonTestProperties.TriggeringContext
 
 class LoadTestsBuilder {
-  static void loadTest(context, String title, Runner runner, SDK sdk, Map<String, ?> options, String mainClass, TriggeringContext triggeringContext) {
+  def loadTest = { scope, sdk, testConfigurations ->
+    scope.description("Runs ${sdk.toString()} GBK load tests on Dataflow runner in batch mode")
+    commonJobProperties.setTopLevelMainJobProperties(scope, 'master', 240)
+
+    for (testConfiguration in loadTestConfigurations) {
+      context = scope instanceof PhraseTriggeringPostCommitBuilder ? CommonTestProperties.TriggeringContext.PR : CommonTestProperties.TriggeringContext.POST_COMMIT
+      run(testConfiguration.title, testConfiguration.runner, sdk, testConfiguration.jobProperties, testConfiguration.itClass, context)
+    }
+  }
+
+
+  private static void run(context, String title, Runner runner, SDK sdk, Map<String, ?> options, String mainClass, TriggeringContext triggeringContext) {
 
     options.put('runner', runner.option)
 
