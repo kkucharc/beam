@@ -29,6 +29,7 @@ class LoadTestsBuilder {
     if (sdk == SDK.PYTHON) {
         def isDataflowJob = testConfigurations.collect{ it.runner == Runner.DATAFLOW }.contains(true)
         runPythonPreTasks(scope, isDataflowJob)
+
     }
 
     for (testConfiguration in testConfigurations) {
@@ -85,13 +86,6 @@ class LoadTestsBuilder {
   }
 
   private static void runPythonPreTasks(scope, boolean isDataflowJob) {
-    scope.steps {
-      gradle {
-        rootBuildScriptDir(commonJobProperties.checkoutDir)
-        tasks(':beam-sdks-python:setupVirtualenv')
-        tasks(':beam-sdks-python:installGcpTest')
-      }
-    }
     if(isDataflowJob){
       scope.steps {
         gradle {
