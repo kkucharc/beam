@@ -58,7 +58,7 @@ task run(type: Exec) {
 }
 
 def fileExists(filePath){
-    assert file (filePath).exists()
+    file (filePath).exists()
 }
 
 def parseOptions(String option) {
