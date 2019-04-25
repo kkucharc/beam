@@ -34,7 +34,7 @@ task run(type: Exec) {
 
     def runnerArg = project.findProperty(runnerProperty) ?: ""
     if (runnerArg == 'DataflowRunner' || runnerArg == 'TestDataflowRunner') {
-        sdistPath = "${project.rootDir}/sdks/python/build/apache-beam.tar.gz"
+        def sdistPath = "${project.rootDir}/sdks/python/build/apache-beam.tar.gz"
         if(!fileExists(sdistPath)){
             dependsOn "sdist"
         }
